@@ -1,5 +1,5 @@
 # evalsploit
-Backdoor based on the `eval' function
+Backdoor based on the `eval` function
 
 
 ### Features
