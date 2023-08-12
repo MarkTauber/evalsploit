@@ -1,3 +1,5 @@
+# [evalsploit по-русски](README_RU.md)
+
 # evalsploit
 Backdoor based on the `eval` function
 
