@@ -13,7 +13,8 @@
 -   **Универсальный**
     -   Встроенная надстройка для байпаса WAF
     -   Новый юзерагент каждую новую сессию
-    -   Тихий режим работы 
+    -   Тихий режим работы
+    -   Пейлоад может быть встроен в любой участок заражаемого php кода
 
 
 # Руководство
@@ -91,10 +92,10 @@
 
 -	`set`: настройка модулей. Чтобы посмотреть список параметров использовать `set модуль help`
 	-	Вместо `help` допустимы `-h`, `h`, `?`, `/?`)
-	-	**run**: exec, shell_exec, system, passthru, popen, proc_open, expect_popen, pcntl_exec, do
-	-	**ls**: ls, dir
-	-	**cat**: html, base64
-	-	**silent**: 1, 0 (тихий режим)
-	-	**reverse**: ivan, monkey 
-	-	**send**: bypass, classic, simple (модуль отправки)
+	-	**run**: `exec`, `shell_exec`, `system`, `passthru`, `popen`, `proc_open`, `expect_popen`, `pcntl_exec`, `do`
+	-	**ls**: `ls`, `dir`
+	-	**cat**: `html`, `base64`
+	-	**silent**: `1`, `0` (тихий режим)
+	-	**reverse**: `ivan`, `monkey` 
+	-	**send**: `bypass`, `classic`, `simple` (модуль отправки)
 	
