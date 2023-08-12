@@ -2,7 +2,7 @@
 
 # evalsploit
 Backdoor based on the `eval` function
-
+Can be used as web-shell
 
 ### Features
 
