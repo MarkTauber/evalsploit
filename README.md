@@ -1,8 +1,7 @@
 # [evalsploit по-русски](README_RU.md)
 
 # evalsploit
-Backdoor based on the `eval` function
-Can be used as web-shell
+Backdoor based on the `eval` function. Can be used as web-shell
 
 ### Features
 
