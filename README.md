@@ -1,4 +1,6 @@
 # evalsploit [RU]
+[Contribution guidelines for this project](README_EN.md)
+
 Бэкдор, основанный на `eval` функции 
 
 
