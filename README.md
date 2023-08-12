@@ -61,7 +61,7 @@ Backdoor based on the `eval` function. Can be used as standalone web-shell
 -	`mkf`: create new file
 
 -	`touch`: change file datestamp
-	-	Use the ` set time ` separator (file.рhр settime Year-Month-Day Hour:Minute:Second)
+	-	Use the ` settime ` separator (file.рhр settime Year-Month-Day Hour:Minute:Second)
 
 -	`stat`: file information
 
