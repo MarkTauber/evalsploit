@@ -1,4 +1,4 @@
-# evalsploit
+# evalsploit [RU]
 Бэкдор, основанный на `eval` функции 
 
 
@@ -106,7 +106,10 @@
 	
 
 
-# evalsploit
+
+
+
+# evalsploit [EN]
 Backdoor based on the `eval' function
 
 
