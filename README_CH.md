@@ -7,16 +7,16 @@
 
 ### 功能
 
--   **Stealth**
-    -   Works on POST requests, practically invisible to logs
-    -   Built-in WAF bypass
-    -   New user agent every new session
-    -   Stealth operation setting
+-   **隐身**
+    -   适用于POST请求 ，几乎不可见日志
+    -   内置WAF 旁路功能
+    -   每个新会话都有新的用户代理
+    -   隐身操作设置
 
 
--   **Universal**
-    -   Payload can be injected in any part of the php code
-    -   Suitable for working with servers on Linux, Windows, Mac OS
+-   **通用**
+    -   有效载荷可添加到PHP代码的任何部分
+    -   适用于 Linux, Windows, Mac OS
 
 # Manual
 
