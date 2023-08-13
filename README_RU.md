@@ -1,3 +1,6 @@
+# [evalsploit 中文版](README_CH.md)
+# [evalsploit english](README.md)
+
 # evalsploit по-русски
 
 
