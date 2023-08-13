@@ -1,5 +1,6 @@
 # [evalsploit по-русски](README_RU.md)
-# [evalsploit 中文版](README_CH.md)
+# [evalsploit 中文版](README_CH.md) 
+
 
 # evalsploit
 Backdoor based on the `eval` function. Can be used as standalone web-shell
@@ -105,4 +106,7 @@ Backdoor based on the `eval` function. Can be used as standalone web-shell
 	-	**silent**: `1`, `0` (Stealth)
 	-	**reverse**: `ivan`, `monkey` 
 	-	**send**: `bypass`, `classic`, `simple` (send mmodule)
-	
+
+
+### Thanks
+Thanks to Zuo Yunfan for helping with the Chinese translation
