@@ -109,3 +109,5 @@
 	-	**reverse**: `ivan`, `monkey` 
 	-	**send**: `bypass`, `classic`, `simple` (модуль отправки)
 	
+### Спасибы
+Спасибо Zuo Yunfan за помощь с переводом на китайский язык
