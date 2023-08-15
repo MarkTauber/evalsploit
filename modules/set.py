@@ -34,7 +34,7 @@ def sets(com):
                             print("чтобы узнать список поддерживаемых параметров CMD используйте h")
                 
                 if command == "ls":
-                    if setting in ("h","-h","help","?","/?","-h"):
+                    if setting in ("h","-h","help","?","/?"):
                         print("Список поддерживаемых параметров:")
                         print("ls, dir")
                         print()
