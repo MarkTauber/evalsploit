@@ -12,7 +12,7 @@ Backdoor based on the `eval` function. Can be used as standalone web-shell
     -   Built-in WAF bypass
     -   New user agent every new session
     -   Stealth operation setting
-
+    -   Polymorphic payloads 
 
 -   **Universal**
     -   Payload can be injected in any part of the php code
