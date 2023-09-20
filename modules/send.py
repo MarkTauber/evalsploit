@@ -10,6 +10,8 @@ def send(url, data, uagent):
     config = configparser.ConfigParser()
     config.read('settings.ini')
     ts = config['SETTINGS']['send']
+    Zc = config['SETTINGS']['Z']
+    Vc = config['SETTINGS']['V']
     proxy = config['SETTINGS']['proxy']
     if proxy != "":
         proxiy = []
@@ -27,7 +29,7 @@ def send(url, data, uagent):
         chars = "_+=/"
         keksik = "".join(chars[c % len(chars)] for c in urandom(4))
         listOne = keksik.join([text[i:i+4] for i in range(0, len(text), 4)])
-        r = requests.post(url, data={'Z': listOne, 'V': keksik},headers={"User-Agent" : uagent}, proxies=proxies, verify=False, timeout=20)
+        r = requests.post(url, data={Zc: listOne, Vc: keksik},headers={"User-Agent" : uagent}, proxies=proxies, verify=False, timeout=1000)
         a = r.text
         a = a[a.find('SPLITLINE_SPLITLINE_SPLITLINE'):].replace('SPLITLINE_SPLITLINE_SPLITLINE','')
         return(a)

