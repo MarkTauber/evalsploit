@@ -1,6 +1,8 @@
 # [evalsploit по-русски](README_RU.md)
 # [evalsploit 中文版](README_CH.md) 
 
+Okay, so, this text is for 2.6.0 #release.
+New version works with generated parametrs, so use `generate` command first to get actual payload - workaround until 2.8.0 so be patient, please. Will do a sessions to fix. Thank you.
 
 # evalsploit
 Backdoor based on the `eval` function. Can be used as standalone web-shell
