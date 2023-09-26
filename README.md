@@ -3,7 +3,7 @@
 
 Okay, so, this text is for 2.6.0 #release.
 New version works with generated parametrs, so use `gen` command first to get actual payload - workaround until 2.8.0 so be patient, please. Will do a sessions to fix. Thank you.
-P.S. 
+P.S.
 You can mutate payload in infected php using `mutate` comand, but other infected urls will not work due to the mutated parametrs (will fix it soon, dont worry)
 
 # evalsploit
