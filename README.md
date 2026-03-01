@@ -7,7 +7,7 @@
 - **Mutation** - replace the backdoor line in the infected file with a new polymorphic payload and switch the client to new keys.
 - **Silent mode** - on connect, do not request identification (pwd, ping); minimal traffic until first commands.
 - **Proxies** - list of host:port, validation, one proxy per session (random or by index), switch without leaving the menu.
-- **Plugins** - add custom commands without modifying core (see “Plugins” section).
+- **Plugins** - add custom commands without modifying core (see "Plugins" section).
 
 **Documentation:** [Русский (main)](README_RU.md) | **English** | [中文](README_ZH.md)
 
@@ -82,7 +82,7 @@ Paths with spaces are supported: use the ` : ` separator for commands that take 
 | **mkdir**, **mkd**, **md** | Create directory |
 | **create**, **mkf** | Create empty file |
 | **touch**, **stat** | Touch timestamp / create empty; file/dir stat |
-| **edit**  | Download → edit locally → upload |
+| **edit**  | Download -> edit locally -> upload |
 | **run**   | Shell mode (exec/shell_exec/...) - type `exit` to quit |
 | **exploit** | disable_functions bypass (e.g. 7.3–8.1) |
 | **scan**  | Recursive scan, report in report/ |
