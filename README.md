@@ -11,6 +11,9 @@
 
 **Documentation:** [Русский (main)](README_RU.md) | **English** | [中文](README_ZH.md)
 
+P.S.
+Yeah, now it works with PHP 8+ but at what cost ... [tanos_meme.png]
+
 ---
 
 ## Install
