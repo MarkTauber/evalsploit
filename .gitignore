@@ -1,0 +1,39 @@
+# Byte-compiled / interpreted
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Install / build
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Local config and session data
+data/settings.ini
+data/sessions/*.ini
+data/proxies.txt
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing / tools
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -2,7 +2,7 @@ import modules.send as send
 
 def exec(url,uagent):
     while True:
-        cmd = input("@exec~: ")
+        cmd = input("exec> ")
         if cmd == "exit":
             break
         with open('bypasses\\exec\\exec.php') as f:data = f.read()
