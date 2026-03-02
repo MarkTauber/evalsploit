@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("ls")
+@register("ls", description="List directory contents", usage="ls [path]")
 class LsModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         style = ctx.config.ls_style

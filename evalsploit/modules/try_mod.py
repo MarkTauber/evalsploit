@@ -33,7 +33,7 @@ if ($r = @`echo 1`) { echo "do,"; }
 """
 
 
-@register("try")
+@register("try", description="Detect available exec methods on server, set the best one", usage="try run")
 class TryModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         arg = args.strip().lower()

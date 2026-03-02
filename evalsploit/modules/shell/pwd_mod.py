@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from evalsploit.modules.base import Module
 
 
-@register("pwd")
+@register("pwd", description="Print current working directory", usage="pwd")
 class PwdModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         print(ctx.pwd)

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("php")
+@register("php", description="Interactive PHP console (send raw PHP to server)", usage="php  (then enter code, 'exit' to quit)")
 class PhpConsoleModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         print("PHP console. Enter code (single line), 'exit' to quit.")

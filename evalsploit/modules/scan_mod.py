@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("scan")
+@register("scan", description="Recursive filesystem scan, saves categorized report to report/", usage="scan [path]")
 class ScanModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         where = ctx.resolve_path(args.strip()) if args.strip() else ctx.pwd

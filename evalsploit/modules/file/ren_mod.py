@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("ren")
+@register("ren", description="Rename or move file/directory", usage="ren <old> : <new>")
 class RenModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():
@@ -28,8 +28,11 @@ class RenModule(Module):
         if not snip:
             return "Snippet not found"
         php = substitute(snip, {"$_LOCAL": php_quote(old_path), "$_REMOTE": php_quote(new_path)})
-        ctx.send(php)
-        print("Renamed")
+        out = ctx.send(php).strip()
+        if out == "OK":
+            print("Renamed")
+        else:
+            print("Error: rename failed")
         return None
 
 

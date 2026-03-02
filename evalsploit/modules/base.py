@@ -39,6 +39,10 @@ _DEFAULT_STYLES: dict[str, list[str]] = {
     "mf": ["mf"],
     "md": ["md"],
     "copy": ["copy"],
+    "grep": ["php"],
+    "find": ["php"],
+    "sql_connect": ["php"],
+    "sql_query": ["php"],
 }
 
 

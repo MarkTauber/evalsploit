@@ -16,12 +16,10 @@ if TYPE_CHECKING:
 class SessionContext:
     """Holds config, current pwd, user-agent, and send delegate."""
 
-    MARKER = "SPLITLINE_SPLITLINE_SPLITLINE"
-
     def __init__(
         self,
         config: EvalsploitConfig,
-        send_fn: Callable[["SessionContext", str], str],
+        send_fn: Callable[["SessionContext", str, "int | None"], str],
     ) -> None:
         self.config = config
         self.pwd: str = "/"
@@ -43,9 +41,9 @@ class SessionContext:
                 self._uagent = "evalsploit/3.0"
         return self._uagent
 
-    def send(self, php_code: str) -> str:
+    def send(self, php_code: str, timeout: int | None = 30) -> str:
         """Send PHP to the backdoor and return parsed response (our output only)."""
-        return self._send_fn(self, php_code)
+        return self._send_fn(self, php_code, timeout)
 
     def resolve_path(self, arg: str) -> str:
         """Resolve path: absolute if starts with /, else pwd + '/' + arg. Normalize //."""

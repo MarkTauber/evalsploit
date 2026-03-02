@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("mkdir")
+@register("mkdir", description="Create directory", usage="mkdir <path>")
 class MkdModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

@@ -39,7 +39,7 @@ echo "DISABLE\t" . (strlen($df) > 200 ? substr($df, 0, 200) . "..." : $df) . "\n
 """
 
 
-@register("info")
+@register("info", description="Server info: PHP, OS, user, disable_functions, open_basedir", usage="info")
 class InfoModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         raw = ctx.send(INFO_PHP)

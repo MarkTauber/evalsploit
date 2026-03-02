@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("stat")
+@register("stat", description="File or directory info (size, permissions, dates)", usage="stat [path]")
 class StatModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         path = ctx.resolve_path(args.strip()) if args.strip() else ctx.pwd

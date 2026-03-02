@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("create")
+@register("create", description="Create empty file", usage="create <path>")
 class MkfModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():
@@ -20,8 +20,10 @@ class MkfModule(Module):
         if not snip:
             return "Snippet not found"
         php = substitute(snip, {"$_LOCAL": php_quote(path)})
-        out = ctx.send(php)
-        if "X" in out:
+        out = ctx.send(php).strip()
+        if out == "EXISTS":
+            print("File already exists")
+        elif "X" in out:
             print(f"Error: {out}")
         else:
             print("File created")

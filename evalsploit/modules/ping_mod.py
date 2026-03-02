@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("ping")
+@register("ping", description="Check connection and measure latency", usage="ping")
 class PingModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         try:

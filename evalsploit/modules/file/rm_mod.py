@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("rm")
+@register("rm", description="Delete file", usage="rm <path>")
 class RmModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

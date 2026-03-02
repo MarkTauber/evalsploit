@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("touch")
+@register("touch", description="Touch file (update timestamp or create empty)", usage="touch <path> [settime YYYY-MM-DD HH:MM:SS]")
 class TouchModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

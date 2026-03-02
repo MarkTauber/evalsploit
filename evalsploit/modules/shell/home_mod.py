@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from evalsploit.modules.base import Module
 
 
-@register("home")
+@register("home", description="Go to server home directory (__DIR__)", usage="home")
 class HomeModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         out = ctx.send("echo __DIR__;")

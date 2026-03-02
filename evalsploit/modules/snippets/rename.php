@@ -1,3 +1,3 @@
 $cat = $_LOCAL;
 $ren = $_REMOTE;
-@rename($cat,$ren);
+if(@rename($cat,$ren)){echo 'OK';}else{echo 'ERR';}

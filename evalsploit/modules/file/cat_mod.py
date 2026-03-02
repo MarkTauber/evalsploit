@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("cat")
+@register("cat", description="View file contents (style: bcat/cat, set with 'set cat')", usage="cat <path>")
 class CatModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from evalsploit.modules.base import Module
 
 
-@register("cd")
+@register("cd", description="Change working directory", usage="cd <path>")
 class CdModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

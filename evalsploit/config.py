@@ -42,9 +42,10 @@ class EvalsploitConfig:
     # Global preferences
     proxy: str = ""
     proxy_list: list[str] = field(default_factory=list)
-    proxy_validated: list[int] = field(default_factory=list)  # 0-based indices
     proxy_enabled: bool = False
     proxy_use_index: int | None = None  # None = random, else index into proxy_list
+    proxy_dead: set[str] = field(default_factory=set)  # proxies found dead this session (not persisted)
+    proxy_list_validated: bool = False  # True if list was cleaned by startup validation
     _proxy_session: str | None = field(default=None, repr=False)  # cache for random mode
     ls_style: str = "ls"  # ls | dir
     cat_style: str = "bcat"  # from snippets.ini [cat]; legacy: base64->bcat, html->cat
@@ -63,6 +64,9 @@ class EvalsploitConfig:
     snippet_mf: str = "mf"
     snippet_md: str = "md"
     snippet_copy: str = "copy"
+
+    # SQL console DSN (saved after successful sql connect)
+    sql_dsn: str = ""
 
     # Paths
     _root: Path = field(default_factory=_project_root, repr=False)
@@ -93,13 +97,7 @@ class EvalsploitConfig:
         if self.proxy_use_index is None:
             if self._proxy_session is not None:
                 return self._proxy_session
-            pool = (
-                [self.proxy_list[i] for i in self.proxy_validated]
-                if self.proxy_validated
-                else self.proxy_list
-            )
-            if not pool:
-                return ""
+            pool = [p for p in self.proxy_list if p not in self.proxy_dead] or list(self.proxy_list)
             chosen = random.choice(pool)
             self._proxy_session = chosen
             return chosen
@@ -107,6 +105,12 @@ class EvalsploitConfig:
         if idx < 0 or idx >= len(self.proxy_list):
             return ""
         return self.proxy_list[idx]
+
+    def proxy_status(self, proxy_str: str) -> str:
+        """Display status tag: [V] confirmed working, [X] dead this session, [?] unchecked."""
+        if proxy_str in self.proxy_dead:
+            return "[X]"
+        return "[V]" if self.proxy_list_validated else "[?]"
 
     def clear_proxy_session_cache(self) -> None:
         """Reset session proxy cache (e.g. for proxy_switch)."""
@@ -138,6 +142,8 @@ class EvalsploitConfig:
                     self.proxy_use_index = int(val)
                 except ValueError:
                     self.proxy_use_index = None
+        if cfg.has_option("SETTINGS", "proxy_list_validated"):
+            self.proxy_list_validated = cfg.get("SETTINGS", "proxy_list_validated", fallback="0") == "1"
         px_path = self.proxies_file
         if px_path.exists():
             lines = []
@@ -170,6 +176,7 @@ class EvalsploitConfig:
             self.snippet_mf = cfg.get("SNIPPETS", "mf", fallback=self.snippet_mf)
             self.snippet_md = cfg.get("SNIPPETS", "md", fallback=self.snippet_md)
             self.snippet_copy = cfg.get("SNIPPETS", "copy", fallback=self.snippet_copy)
+        self.sql_dsn = cfg.get("SETTINGS", "sql_dsn", fallback=self.sql_dsn)
         self._validate_snippet_keys()
 
     def save_global(self) -> None:
@@ -185,12 +192,14 @@ class EvalsploitConfig:
             "proxy": self.proxy_list[0] if self.proxy_list else self.proxy,
             "proxy_enabled": "1" if self.proxy_enabled else "0",
             "proxy_use_index": proxy_use_val,
+            "proxy_list_validated": "1" if self.proxy_list_validated else "0",
             "ls": self.ls_style,
             "read": self.cat_style,
             "shell": self.run_shell,
             "silent": "1" if self.silent else "0",
             "reverse": self.reverse_type,
             "confirm": "1" if self.confirm else "0",
+            "sql_dsn": self.sql_dsn,
         }
         cfg["SNIPPETS"] = {
             "rm": self.snippet_rm,

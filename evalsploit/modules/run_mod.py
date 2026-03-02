@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 EXEC_NAMES = ("exec", "shell_exec", "system", "passthru", "popen", "proc_open", "expect_popen", "pcntl_exec", "do")
 
 
-@register("run")
+@register("run", description="Interactive shell console (uses configured exec method)", usage="run  (then OS commands, 'exit' to quit)")
 class RunModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         shell = ctx.config.run_shell

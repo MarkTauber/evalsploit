@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from evalsploit.context import SessionContext
 
 
-@register("edit")
+@register("edit", description="Edit file on server (download → edit locally → upload)", usage="edit <path>")
 class EditModule(Module):
     def run(self, ctx: "SessionContext", args: str) -> Optional[str]:
         if not args.strip():

