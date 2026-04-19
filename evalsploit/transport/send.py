@@ -28,7 +28,7 @@ def send(ctx: "SessionContext", php_code: str, timeout: int | None = 30) -> str:
     marker = secrets.token_hex(8)          # 16 hex chars, unique per request
     payload = (
         f'echo "{marker}";'
-        f'try{{{php_code}}}catch(\\Throwable $e){{echo "[PHP_ERR:".$e->getMessage()."]";}}'
+        f'try{{{php_code}}}catch(Exception $e){{echo "[PHP_ERR:".$e->getMessage()."]";}}'
     )
     mode = ctx.config.send_mode
     z_key = ctx.config.Z
