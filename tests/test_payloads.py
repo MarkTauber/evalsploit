@@ -24,11 +24,32 @@ def test_generate_polymorphic():
     assert "isset" in code or "POST" in code
 
 
-def test_mutation_php():
-    php = mutation_php("if(1){}", "Z")
+def test_mutation_php_structure():
+    php = mutation_php("if(1){}", "abc123")
     assert "base64_decode" in php
-    assert "isset($_POST[" in php
-    assert "getcwd" in php or "PHP_SELF" in php
+    assert "abc123" in php
+    assert "SCRIPT_FILENAME" in php
+    assert "Mutated successfully" in php
+    assert "ERR:marker line not found" in php
+    assert "htmlentities" not in php
+
+
+def test_mutation_php_finds_correct_marker():
+    """The findme string must match what generate_backdoor/polymorphic actually produces."""
+    from evalsploit.transport.payloads import generate_polymorphic_backdoor, generate_php8_backdoor
+    for Z, V in [("myZ", "myV"), ("ab", "cd")]:
+        for gen in (generate_polymorphic_backdoor, generate_php8_backdoor):
+            backdoor = gen(Z, V)
+            assert f"isset($_POST['{Z}'])" in backdoor, \
+                f"{gen.__name__} output missing expected marker for Z={Z!r}"
+
+
+def test_mutation_php_no_htmlentities_roundtrip():
+    """Single quotes in findme must not be HTML-encoded — would break strpos on PHP 8.1+."""
+    php = mutation_php("NEW_BACKDOOR", "myKey")
+    findme_line = next(l for l in php.splitlines() if "$findme" in l)
+    assert "&#039;" not in findme_line
+    assert "myKey" in findme_line
 
 
 def test_substitute():
